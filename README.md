@@ -2,29 +2,27 @@
 
 > If you're looking for the F# version, go [here](https://github.com/jonsagara/HttpClientTestNotHostedServiceFSharp).
 
-Not that there's anything wrong with `IHostedService`, but sometimes you just want a plain old console app without having to implement another interface just so 
-that you can inject and use `IHttpClientFactory`.
+Not that there's anything wrong with `IHostedService`, but sometimes you just want a plain old console app without 
+having to implement another interface just so that you can inject and use `IHttpClientFactory`.
 
-There is still some ceremony involved with setting up the Generic Host `HostBuilder` so that you can inject `IHttpClientFactory` into your classes,
-but beyond that you merely create an `IServiceScope` to make everything work:
+By using the new `HostApplicationBuilder` pattern (encapsulated in the `ConsoleHost` class), there is much less
+ceremony involved with setting up the Generic Host `HostBuilder` so that you can inject `IHttpClientFactory` 
+into your classes. Beyond that, you merely create an `IServiceScope` to make everything work:
 
 ```csharp
-using (var serviceScope = host.Services.CreateScope())
-{
-    var services = serviceScope.ServiceProvider;
+using var serviceScope = host.Services.CreateScope();
+var services = serviceScope.ServiceProvider;
 
-    try
-    {
-        var testSvc = services.GetRequiredService<TestService>();
-        var html = await testSvc.GetMicrosoftAsync();
-        Console.WriteLine(html.Take(1000).ToArray());
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        Console.Error.WriteLine($"Unhandled exception: {ex}");
-        logger.LogError(ex, "Unhandled exception");
-    }
+try
+{
+    var testSvc = services.GetRequiredService<TestService>();
+    var html = await testSvc.GetMicrosoftAsync();
+
+    Console.WriteLine($"Web page: {new string(html.Take(1000).ToArray())}");
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Unhandled exception");
 }
 ```
 
